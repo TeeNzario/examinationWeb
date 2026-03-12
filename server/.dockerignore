@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Generated Prisma client (will be regenerated in Docker)
+generated
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Test
+coverage
+test
+
+# Docker
+Dockerfile
+.dockerignore

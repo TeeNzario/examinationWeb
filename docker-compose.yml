@@ -1,0 +1,82 @@
+# ============================================
+# Docker Compose for Exam System
+# ============================================
+# Services:
+#   - postgres : PostgreSQL 15 database
+#   - server   : NestJS backend (port 3001)
+#   - client   : Next.js frontend via Nginx (port 3000)
+#
+# Usage:
+#   docker compose up --build
+#
+# Access:
+#   Frontend  → http://localhost:3000
+#   Backend   → http://localhost:3001
+#   Database  → postgresql://teen:teen2558@localhost:5432/examdb
+# ============================================
+
+services:
+  # ------------------------------------------
+  # PostgreSQL 15 Database
+  # ------------------------------------------
+  postgres:
+    image: postgres:15
+    container_name: exam-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: teen
+      POSTGRES_PASSWORD: teen2558
+      POSTGRES_DB: examdb
+    ports:
+      # Expose to host so you can connect with pgAdmin, DBeaver, etc.
+      - "5432:5432"
+    volumes:
+      # Persist database data across container restarts
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teen -d examdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ------------------------------------------
+  # NestJS Backend Server
+  # ------------------------------------------
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: exam-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      # Backend connects to PostgreSQL using Docker service name
+      DATABASE_URL: postgresql://teen:teen2558@postgres:5432/examdb
+      PORT: "3001"
+    depends_on:
+      # Wait for PostgreSQL to be healthy before starting
+      postgres:
+        condition: service_healthy
+
+  # ------------------------------------------
+  # Next.js Frontend served by Nginx
+  # ------------------------------------------
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: exam-client
+    restart: unless-stopped
+    ports:
+      # Map host port 3000 to Nginx port 80
+      - "3000:80"
+    depends_on:
+      - server
+
+# ============================================
+# Named volumes for data persistence
+# ============================================
+volumes:
+  pgdata:
+    driver: local

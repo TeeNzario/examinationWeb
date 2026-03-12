@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  created_at DateTime @default(now())
+
+  questions    Question[]
+  exams        Exam[]
+  examAttempts ExamAttempt[]
+
+  @@map("users")
+}
+
+model Question {
+  id            Int      @id @default(autoincrement())
+  question_text String
+  created_by    Int
+  created_at    DateTime @default(now())
+
+  creator       User           @relation(fields: [created_by], references: [id])
+  choices       Choice[]
+  examQuestions ExamQuestion[]
+  answers       Answer[]
+
+  @@map("questions")
+}
+
+model Choice {
+  id          Int     @id @default(autoincrement())
+  question_id Int
+  choice_text String
+  is_correct  Boolean @default(false)
+
+  question Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  answers  Answer[]
+
+  @@map("choices")
+}
+
+model Exam {
+  id                     Int      @id @default(autoincrement())
+  title                  String
+  duration_minutes       Int
+  show_score_after_submit Boolean @default(true)
+  created_by             Int
+  created_at             DateTime @default(now())
+
+  creator       User           @relation(fields: [created_by], references: [id])
+  examQuestions ExamQuestion[]
+  examAttempts  ExamAttempt[]
+
+  @@map("exams")
+}
+
+model ExamQuestion {
+  id          Int @id @default(autoincrement())
+  exam_id     Int
+  question_id Int
+  order_index Int
+
+  exam     Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+
+  @@unique([exam_id, question_id])
+  @@map("exam_questions")
+}
+
+model ExamAttempt {
+  id         Int      @id @default(autoincrement())
+  exam_id    Int
+  user_id    Int
+  start_time DateTime @default(now())
+  end_time   DateTime
+  score      Int?
+  status     String   @default("in_progress")
+
+  exam    Exam     @relation(fields: [exam_id], references: [id])
+  user    User     @relation(fields: [user_id], references: [id])
+  answers Answer[]
+
+  @@map("exam_attempts")
+}
+
+model Answer {
+  id          Int @id @default(autoincrement())
+  attempt_id  Int
+  question_id Int
+  choice_id   Int
+
+  attempt  ExamAttempt @relation(fields: [attempt_id], references: [id])
+  question Question    @relation(fields: [question_id], references: [id])
+  choice   Choice      @relation(fields: [choice_id], references: [id])
+
+  @@unique([attempt_id, question_id])
+  @@map("answers")
+}
