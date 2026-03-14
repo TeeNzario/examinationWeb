@@ -29,33 +29,28 @@ ENV NEXT_PUBLIC_API_URL=/api
 # Build the Next.js application (standalone output)
 RUN npm run build
 
+
 # ============================================
-# Stage 3: Production image with Nginx + Node
-# Uses Nginx to reverse proxy and serve
-# static assets, while Node runs Next.js
-# standalone server for SSR/dynamic routes.
+# Stage 3: Production runtime
+# Runs the Next.js standalone server.
+# Nginx reverse proxy is handled by a separate
+# container defined in docker-compose.
 # ============================================
+
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Install Nginx
-RUN apk add --no-cache nginx
-
-# Copy the standalone Next.js server
+# Copy standalone Next.js server
 COPY --from=builder /app/.next/standalone ./
+
 # Copy static assets
 COPY --from=builder /app/.next/static ./.next/static
+
 # Copy public assets
 COPY --from=builder /app/public ./public
 
-# Copy Nginx config
-COPY nginx.conf /etc/nginx/http.d/default.conf
+# Next.js standalone server listens on port 3000
+EXPOSE 3000
 
-# Expose port 80 (Nginx) — mapped to 3000 in docker-compose
-EXPOSE 80
-
-# Start Nginx and Next.js server together
-# Next.js standalone listens on port 3000 internally,
-# Nginx on port 80 proxies to it and to the backend API.
-CMD sh -c "nginx && PORT=3000 HOSTNAME=0.0.0.0 node server.js"
+CMD ["node","server.js"]
