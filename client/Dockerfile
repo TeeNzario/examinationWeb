@@ -23,7 +23,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set the API base URL for the build
-ENV NEXT_PUBLIC_API_URL=https://api.teenzario.my.id
+ENV NEXT_PUBLIC_API_URL=http://api.teenzario.my.id
 
 # Build the Next.js application (standalone output)
 RUN npm run build
